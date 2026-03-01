@@ -1,0 +1,52 @@
+from itertools import combinations
+
+# Define all possible feature sets
+feature_names = ['Temperature', 'Humidity', 'Wind Speed']
+feature_combinations = [list(combo) for i in range(1, len(feature_names)+1) for combo in combinations(feature_names, i)]
+
+# Dictionary to store results
+results = {}
+
+# Train and evaluate models with different feature combinations
+for features in feature_combinations:
+    # Split data
+    X_train_subset, X_test_subset = X_train[features], X_test[features]
+
+    # Train logistic regression model
+    model = LogisticRegression()
+    model.fit(X_train_subset, y_train)
+
+    # Predict ignition probabilities
+    y_pred_prob_subset = model.predict_proba(X_test_subset)[:, 1]
+    y_pred_subset = model.predict(X_test_subset)
+
+    # Compute accuracy and AUC
+    accuracy_subset = accuracy_score(y_test, y_pred_subset)
+    fpr_subset, tpr_subset, _ = roc_curve(y_test, y_pred_prob_subset)
+    auc_subset = auc(fpr_subset, tpr_subset)
+
+    # Store results
+    results[tuple(features)] = {'Accuracy': accuracy_subset, 'AUC': auc_subset}
+
+# Convert results to DataFrame
+results_df = pd.DataFrame.from_dict(results, orient='index').reset_index()
+results_df.columns = ['Features', 'Accuracy', 'AUC']
+
+# Display results
+tools.display_dataframe_to_user(name="Feature Combinations Evaluation", dataframe=results_df)
+
+# Test real-world scenarios
+real_world_data = pd.DataFrame({
+    'Temperature': [35, 20, 28, 40],  # High and moderate temperatures
+    'Humidity': [15, 70, 40, 10],  # Low and high humidity
+    'Wind Speed': [10, 5, 15, 20]  # Different wind conditions
+})
+
+# Predict ignition probability for real-world scenarios
+real_world_prob = model.predict_proba(real_world_data)[:, 1]
+
+# Attach predictions to DataFrame
+real_world_data['Ignition Probability'] = real_world_prob
+
+# Display real-world scenario results
+tools.display_dataframe_to_user(name="Real-World Ignition Predictions", dataframe=real_world_data)
